@@ -107,8 +107,31 @@ export function buildApp(): express.Express {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cfg = loadConfig();
   const app = buildApp();
-  app.listen(cfg.port, () => {
+  const server = app.listen(cfg.port, () => {
     // eslint-disable-next-line no-console
     console.log(`LedgerMem WhatsApp connector listening on :${cfg.port}`);
   });
+
+  // Graceful shutdown — stop accepting new webhook deliveries but let
+  // in-flight processIncomingMessage calls finish so we don't drop a
+  // memory.add mid-write on SIGTERM.
+  let shuttingDown = false;
+  const shutdown = (signal: string): void => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    // eslint-disable-next-line no-console
+    console.log(`Received ${signal}, draining HTTP server…`);
+    const force = setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.warn("Shutdown timed out, forcing exit.");
+      process.exit(1);
+    }, 15_000);
+    force.unref();
+    server.close(() => {
+      clearTimeout(force);
+      process.exit(0);
+    });
+  };
+  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
 }
