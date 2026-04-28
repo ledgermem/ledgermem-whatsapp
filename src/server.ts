@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
 import { LedgerMem } from "@ledgermem/memory";
 import { loadConfig } from "./config.js";
@@ -9,6 +10,13 @@ import {
   processIncomingMessage,
   type WhatsAppWebhookBody,
 } from "./handlers.js";
+
+function safeEqualString(a: string, b: string): boolean {
+  const ab = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 export function buildApp(): express.Express {
   const cfg = loadConfig();
@@ -31,13 +39,33 @@ export function buildApp(): express.Express {
     }),
   );
 
+  // Bounded dedup of inbound message ids — Meta retries deliveries for up to
+  // ~15 minutes when our 200 doesn't reach them quickly.
+  const seenMessages = new Set<string>();
+  const SEEN_MAX = 5000;
+  const isDuplicate = (id: string): boolean => {
+    if (seenMessages.has(id)) return true;
+    seenMessages.add(id);
+    if (seenMessages.size > SEEN_MAX) {
+      const oldest = seenMessages.values().next().value;
+      if (oldest !== undefined) seenMessages.delete(oldest);
+    }
+    return false;
+  };
+
   app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
   app.get("/webhook", (req: Request, res: Response) => {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
-    if (mode === "subscribe" && token === cfg.verifyToken) {
+    // Use constant-time comparison so the verify token can't be discovered
+    // via response-timing.
+    if (
+      mode === "subscribe" &&
+      typeof token === "string" &&
+      safeEqualString(token, cfg.verifyToken)
+    ) {
       return res.status(200).send(String(challenge ?? ""));
     }
     return res.sendStatus(403);
@@ -60,11 +88,15 @@ export function buildApp(): express.Express {
     // Ack fast — process async to keep webhook latency low.
     res.sendStatus(200);
     for (const msg of messages) {
-      try {
-        await processIncomingMessage(msg, { memory, whatsapp });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("processIncomingMessage failed:", err);
+      if (isDuplicate(msg.messageId)) continue;
+      if (!cfg.allowedSenders.size || cfg.allowedSenders.has(msg.from)) {
+        try {
+          await processIncomingMessage(msg, { memory, whatsapp });
+        } catch (err) {
+          console.error("processIncomingMessage failed:", err);
+        }
+      } else {
+        console.warn("ignoring message from non-allowlisted sender:", msg.from);
       }
     }
   });
