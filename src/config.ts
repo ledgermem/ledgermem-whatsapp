@@ -3,8 +3,8 @@ export interface AppConfig {
   accessToken: string;
   webhookSecret: string;
   verifyToken: string;
-  ledgermemApiKey: string;
-  ledgermemWorkspaceId: string;
+  getmnemoApiKey: string;
+  getmnemoWorkspaceId: string;
   port: number;
   graphApiVersion: string;
   // Allowlist of WhatsApp E.164 sender numbers (without `+`) permitted to
@@ -17,8 +17,8 @@ const REQUIRED = [
   "WHATSAPP_ACCESS_TOKEN",
   "WHATSAPP_WEBHOOK_SECRET",
   "WHATSAPP_VERIFY_TOKEN",
-  "LEDGERMEM_API_KEY",
-  "LEDGERMEM_WORKSPACE_ID",
+  "GETMNEMO_API_KEY",
+  "GETMNEMO_WORKSPACE_ID",
 ] as const;
 
 function loadAllowedSenders(): Set<string> {
@@ -41,8 +41,8 @@ export function loadConfig(): AppConfig {
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN as string,
     webhookSecret: process.env.WHATSAPP_WEBHOOK_SECRET as string,
     verifyToken: process.env.WHATSAPP_VERIFY_TOKEN as string,
-    ledgermemApiKey: process.env.LEDGERMEM_API_KEY as string,
-    ledgermemWorkspaceId: process.env.LEDGERMEM_WORKSPACE_ID as string,
+    getmnemoApiKey: process.env.GETMNEMO_API_KEY as string,
+    getmnemoWorkspaceId: process.env.GETMNEMO_WORKSPACE_ID as string,
     port: Number(process.env.PORT ?? 8080),
     graphApiVersion: process.env.GRAPH_API_VERSION ?? "v20.0",
     allowedSenders: loadAllowedSenders(),

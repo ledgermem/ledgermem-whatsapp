@@ -1,9 +1,9 @@
-import type { LedgerMem } from "@ledgermem/memory";
+import type { Mnemo } from "@getmnemo/memory";
 import type { WhatsAppClient } from "./whatsapp.js";
 
 export interface MemoryClient {
-  search: LedgerMem["search"];
-  add: LedgerMem["add"];
+  search: Mnemo["search"];
+  add: Mnemo["add"];
 }
 
 export interface SearchHit {

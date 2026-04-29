@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
-import { LedgerMem } from "@ledgermem/memory";
+import { Mnemo } from "@getmnemo/memory";
 import { loadConfig } from "./config.js";
 import { verifyMetaSignature } from "./signature.js";
 import { WhatsAppClient } from "./whatsapp.js";
@@ -20,9 +20,9 @@ function safeEqualString(a: string, b: string): boolean {
 
 export function buildApp(): express.Express {
   const cfg = loadConfig();
-  const memory = new LedgerMem({
-    apiKey: cfg.ledgermemApiKey,
-    workspaceId: cfg.ledgermemWorkspaceId,
+  const memory = new Mnemo({
+    apiKey: cfg.getmnemoApiKey,
+    workspaceId: cfg.getmnemoWorkspaceId,
   });
   const whatsapp = new WhatsAppClient({
     phoneNumberId: cfg.phoneNumberId,
@@ -109,7 +109,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const app = buildApp();
   const server = app.listen(cfg.port, () => {
     // eslint-disable-next-line no-console
-    console.log(`LedgerMem WhatsApp connector listening on :${cfg.port}`);
+    console.log(`Mnemo WhatsApp connector listening on :${cfg.port}`);
   });
 
   // Graceful shutdown — stop accepting new webhook deliveries but let
