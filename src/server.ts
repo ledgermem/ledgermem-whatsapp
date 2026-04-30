@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
-import { Mnemo } from "@getmnemo/memory";
+import { Mnemo } from "@mnemo/memory";
 import { loadConfig } from "./config.js";
 import { verifyMetaSignature } from "./signature.js";
 import { WhatsAppClient } from "./whatsapp.js";

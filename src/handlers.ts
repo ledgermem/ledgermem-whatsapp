@@ -1,4 +1,4 @@
-import type { Mnemo } from "@getmnemo/memory";
+import type { Mnemo } from "@mnemo/memory";
 import type { WhatsAppClient } from "./whatsapp.js";
 
 export interface MemoryClient {
